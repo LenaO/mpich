@@ -13,11 +13,15 @@ extern char *strdup(const char *);
 
 #if defined(MPL_USE_MEMORY_TRACING)
 #define MPL_strdup(a)    MPL_trstrdup(a,__LINE__,__FILE__)
-#elif defined(MPL_HAVE_STRDUP)
+#elif defined(MPL_HAVE_STRDUP)  && !defined(MPL_HAVE_MEMKIND)
 #define MPL_strdup strdup
 #else
 char *MPL_strdup(const char *str);
 #endif /* defined(MPL_USE_MEMORY_TRACING) || defined(MPL_HAVE_STRDUP) */
+
+#ifdef MPL_HAVE_MEMKIND
+#include <memkind.h>
+#endif
 
 #ifdef MPL_USE_MEMORY_TRACING
 /*M
@@ -104,12 +108,24 @@ char *MPL_strdup(const char *str);
 #define MPL_realloc(a,b)    MPL_trrealloc((a),(b),__LINE__,__FILE__)
 
 #else /* MPL_USE_MEMORY_TRACING */
+
 /* No memory tracing; just use native functions */
+#ifdef MPL_HAVE_MEMKIND
+#define MPL_malloc(a)    memkind_malloc(MEMKIND_DEFAULT, (size_t)(a))
+#define MPL_calloc(a,b)  memkind_calloc(MEMKIND_DEFAULT, (size_t)(a),(size_t)(b))
+#define MPL_free(a)      memkind_free(MEMKIND_DEFAULT, (void *)(a))
+#define MPL_realloc(a,b) memkind_realloc(MEMKIND_DEFAULT,  (void *)(a),(size_t)(b))
+#define MPL_malloc_slow(a)    memkind_malloc(MEMKIND_SLOW, (size_t)(a))
+#define MPL_calloc_slow(a,b)  memkind_calloc(MEMKIND_SLOW, (size_t)(a),(size_t)(b))
+#define MPL_free_slow(a)      memkind_free(MEMKIND_SLOW, (void *)(a))
+
+
+#else
 #define MPL_malloc(a)    malloc((size_t)(a))
 #define MPL_calloc(a,b)  calloc((size_t)(a),(size_t)(b))
 #define MPL_free(a)      free((void *)(a))
 #define MPL_realloc(a,b)  realloc((void *)(a),(size_t)(b))
-
+#endif
 #endif /* MPL_USE_MEMORY_TRACING */
 
 

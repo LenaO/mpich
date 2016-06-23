@@ -11,8 +11,7 @@ AC_CONFIG_SRCDIR([src/str/mpl_str.c])
 
 AC_CONFIG_AUX_DIR(confdb)
 AC_CONFIG_MACRO_DIR(confdb)
-AM_INIT_AUTOMAKE([subdir-objects] [-Wall -Werror foreign 1.12.3])
-
+AM_INIT_AUTOMAKE([subdir-objects] [-Wall -Werror foreign 1.12.3])8
 dnl must come before LT_INIT, which AC_REQUIREs AC_PROG_CC
 PAC_PROG_CC
 AM_PROG_CC_C_O
@@ -52,6 +51,31 @@ AC_C_INLINE
 
 PAC_C_MACRO_VA_ARGS
 PAC_C_BUILTIN_EXPECT
+
+AC_ARG_WITH([memkind],
+	[AC_HELP_STRING([--with-memkind=path], [Use the memkind library])],
+	[if test -z "$withval" ; then with_mekind=$withval ; fi],[with_memkind="no"])
+
+if test "${with_memkind}" != "no" ; then
+    if test "${with_memkind}" != "yes" ; then
+        MEMKIND_INCLUDE="-I${with_memkind}/include"
+        CPPFLAGS="$CPPFLAGS $MEMKIND_INCLUDE"
+#        LIBS="${with_memkind}/lib/libmemkind.a $LIBS"
+#         LIBS="${with_memkind}/lib/libjemalloc.a $LIBS"
+        PAC_APPEND_FLAG([-L${with_memkind}/lib  -lmemkind -ljemalloc -lnuma -lscif],[LDFLAGS])
+    fi
+
+    AC_CHECK_HEADER([memkind.h], , [AC_MSG_ERROR(['memkind.h not found in ${with_memkind}/include.
+Did you specify the correct path with --with-memkind=?'])])
+
+    echo -n "checking for memkind libraries... "
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <memkind.h>],
+                                   [memkind_malloc(MEMKIND_DEFAULT, 1024);])], [echo "yes"], 
+                                   [echo "no" ; AC_MSG_ERROR(['MPL: Cannot link with memkind:  Cannot
+find ${with_memkind}/lib/libmemkind.a or ${withmemkind}/lib/libjemalloc.a'])])
+        AC_DEFINE(HAVE_MEMKIND,1,[Define if memkind is used])
+
+fi
 
 AC_ARG_ENABLE(embedded,
     AC_HELP_STRING([--enable-embedded], [Build MPL in embedded mode (default is no)]),

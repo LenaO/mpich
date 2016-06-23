@@ -21,18 +21,37 @@
 /* initialized in initthread.c */
 MPIR_Comm MPIR_Comm_builtin[MPIR_COMM_N_BUILTIN] = { {0} };
 MPIR_Comm MPIR_Comm_direct[MPID_COMM_PREALLOC] = { {0} };
-
+#ifdef HAVE_MEMKIND
 MPIR_Object_alloc_t MPIR_Comm_mem = {
     0,
     0,
     0,
     0,
+    0,
+    0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
     MPIR_COMM,
     sizeof(MPIR_Comm),
     MPIR_Comm_direct,
     MPID_COMM_PREALLOC
 };
-
+#else
+MPIR_Object_alloc_t MPIR_Comm_mem = {
+    0,
+    0,
+    0,
+    0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+    MPIR_COMM,
+    sizeof(MPIR_Comm),
+    MPIR_Comm_direct,
+    MPID_COMM_PREALLOC
+};
+#endif
 /* Communicator creation functions */
 struct MPIR_Commops *MPIR_Comm_fns = NULL;
 struct MPIR_Comm_hint_fn_elt {

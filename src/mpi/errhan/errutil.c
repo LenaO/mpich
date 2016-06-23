@@ -146,11 +146,26 @@ static int checkForUserErrcode( int );
 MPIR_Errhandler MPIR_Errhandler_builtin[3] = { {0} };
 MPIR_Errhandler MPIR_Errhandler_direct[MPIR_ERRHANDLER_PREALLOC] =
     { {0} };
-MPIR_Object_alloc_t MPIR_Errhandler_mem = { 0, 0, 0, 0, MPIR_ERRHANDLER,
+#ifdef HAVE_MEMKIND
+MPIR_Object_alloc_t MPIR_Errhandler_mem = { 0, 0, 0, 0, 0, 0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+                        MPIR_ERRHANDLER,
 					    sizeof(MPIR_Errhandler),
 					    MPIR_Errhandler_direct,
 					    MPIR_ERRHANDLER_PREALLOC, };
-
+#
+#else
+MPIR_Object_alloc_t MPIR_Errhandler_mem = { 0, 0, 0, 0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+                        MPIR_ERRHANDLER,
+					    sizeof(MPIR_Errhandler),
+					    MPIR_Errhandler_direct,
+					    MPIR_ERRHANDLER_PREALLOC, };
+#endif
 void MPIR_Errhandler_free(MPIR_Errhandler *errhan_ptr)
 {
     MPIR_Handle_obj_free(&MPIR_Errhandler_mem, errhan_ptr);

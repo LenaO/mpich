@@ -14,10 +14,24 @@
 /* Preallocated group objects */
 MPIR_Group MPIR_Group_builtin[MPIR_GROUP_N_BUILTIN] = { {0} };
 MPIR_Group MPIR_Group_direct[MPID_GROUP_PREALLOC] = { {0} };
-MPIR_Object_alloc_t MPIR_Group_mem = { 0, 0, 0, 0, MPIR_GROUP,
+#ifdef HAVE_MEMKIND
+MPIR_Object_alloc_t MPIR_Group_mem = { 0, 0, 0, 0, 0, 0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+                      MPIR_GROUP,
 				      sizeof(MPIR_Group), MPIR_Group_direct,
 				       MPID_GROUP_PREALLOC};
 
+#else
+MPIR_Object_alloc_t MPIR_Group_mem = { 0, 0, 0, 0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+                      MPIR_GROUP,
+				      sizeof(MPIR_Group), MPIR_Group_direct,
+				       MPID_GROUP_PREALLOC};
+#endif
 MPIR_Group * const MPIR_Group_empty = &MPIR_Group_builtin[0];
 
 int MPIR_Group_init(void)

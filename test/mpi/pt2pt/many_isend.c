@@ -25,27 +25,30 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
-    sendreqs = (MPI_Request *) malloc(nprocs * sizeof(MPI_Request));
-    sendstats = (MPI_Status *) malloc(nprocs * sizeof(MPI_Status));
+    sendreqs = (MPI_Request *) malloc(ITER * nprocs * sizeof(MPI_Request));
+    sendstats = (MPI_Status *) malloc(ITER * nprocs * sizeof(MPI_Status));
 
     for (x = 0; x < ITER; x++) {
         MPI_Barrier(MPI_COMM_WORLD);
 
         /* all to all send */
         for (i = 0; i < nprocs; i++) {
-            MPI_Isend(sendbuf, BUF_COUNT, MPI_CHAR, i, 0, MPI_COMM_WORLD, &sendreqs[i]);
+            MPI_Irecv(sendbuf, BUF_COUNT, MPI_CHAR, i, 0, MPI_COMM_WORLD, &sendreqs[i+x*nprocs]);
         }
 
         /* receive one by one */
-        for (i = 0; i < nprocs; i++) {
-            MPI_Recv(recvbuf, BUF_COUNT, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD,
-                     MPI_STATUS_IGNORE);
-        }
-
         /* ensure all send request completed */
-        MPI_Waitall(nprocs, sendreqs, sendstats);
+
     }
 
+        MPI_Barrier(MPI_COMM_WORLD);
+    for (x = 0; x < ITER; x++) {
+        for (i = 0; i < nprocs; i++) {
+            MPI_Send(recvbuf, BUF_COUNT, MPI_CHAR, i, 0, MPI_COMM_WORLD);
+        }
+
+}
+    MPI_Waitall(ITER * nprocs, sendreqs, sendstats);
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank == 0)
         printf(" No Errors\n");

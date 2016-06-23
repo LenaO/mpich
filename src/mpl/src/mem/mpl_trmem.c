@@ -15,6 +15,7 @@
 
 #include "mpl.h"
 
+#include "mplconfig.h"
 #ifdef malloc
 /* Undefine these in case they were set to 'error' */
 #undef malloc
@@ -26,6 +27,13 @@
 #define strdup(s) __strdup(s)
 #endif
 #endif
+#ifdef MPL_HAVE_MEMKIND
+#include <memkind.h>
+#include <memkind_special.h>
+#endif
+/* HEADER_DOUBLES is the number of doubles in a trSPACE header */
+/* We have to be careful about alignment rules here */
+/* Assume worst case and align on 8 bytes */
 
 #define TR_ALIGN_BYTES 8
 #define TR_ALIGN_MASK  0x7
@@ -45,6 +53,10 @@ typedef struct TRSPACE {
     unsigned long cookie;       /* Cookie is always the last element
                                  * inorder to catch the off-by-one
                                  * errors */
+#ifdef MPL_HAVE_MEMKIND
+    memkind_t memkind;
+#endif
+
 } TRSPACE;
 /* This union is used to ensure that the block passed to the user is
    aligned on a double boundary */
@@ -227,7 +239,11 @@ Input Parameters:
     double aligned pointer to requested storage, or null if not
     available.
  +*/
+#ifdef MPL_HAVE_MEMKIND
+static void *trmalloc(size_t a, int lineno, const char fname[], memkind_t memkind)
+#else
 static void *trmalloc(size_t a, int lineno, const char fname[])
+#endif
 {
     TRSPACE *head;
     char *new = NULL;
@@ -252,8 +268,12 @@ static void *trmalloc(size_t a, int lineno, const char fname[])
         MPL_error_printf("Exceeded allowed memory!\n");
         goto fn_exit;
     }
+#ifdef MPL_HAVE_MEMKIND
 
+    new = (char *)memkind_malloc(memkind, nsize + sizeof(TrSPACE) + sizeof(unsigned long));
+#else
     new = (char *)malloc(nsize + sizeof(TrSPACE) + sizeof(unsigned long));
+#endif
     if (!new)
         goto fn_exit;
 
@@ -284,6 +304,9 @@ static void *trmalloc(size_t a, int lineno, const char fname[])
     MPL_strncpy(head->fname, fname, TR_FNAME_LEN);
     head->fname[TR_FNAME_LEN - 1] = 0;
     head->cookie = COOKIE_VALUE;
+#ifdef MPL_HAVE_MEMKIND
+    head->memkind = memkind;
+#endif
     /* Cast to (void*) to avoid false warning about alignment */
     nend = (unsigned long *) (void *) (new + nsize);
     nend[0] = COOKIE_VALUE;
@@ -327,7 +350,11 @@ void *MPL_trmalloc(size_t a, int lineno, const char fname[])
     void *retval;
 
     TR_THREAD_CS_ENTER;
+#ifdef MPL_HAVE_MEMKIND
+    retval = trmalloc(a, lineno, fname, MEMKIND_SLOW);
+#else
     retval = trmalloc(a, lineno, fname);
+#endif
     TR_THREAD_CS_EXIT;
 
     return retval;
@@ -348,7 +375,6 @@ static void trfree(void *a_ptr, int line, const char file[])
     size_t nset;
     int l;
     char hexstring[MAX_ADDRESS_CHARS];
-
 /* Don't try to handle empty blocks */
     if (!a_ptr)
         return;
@@ -485,7 +511,11 @@ static void trfree(void *a_ptr, int line, const char file[])
         if(TRSetBytes)
           memset((char *)a_ptr + 2 * sizeof(int), TRFreedByte, nset);
     }
+#ifdef MPL_HAVE_MEMKIND
+     memkind_free(head->memkind, head);
+#else
     free(head);
+#endif
 }
 
 void MPL_trfree(void *a_ptr, int line, const char fname[])
@@ -494,6 +524,7 @@ void MPL_trfree(void *a_ptr, int line, const char fname[])
     trfree(a_ptr, line, fname);
     TR_THREAD_CS_EXIT;
 }
+
 
 /*+C
    MPL_trvalid - test the allocated blocks for validity.  This can be used to
@@ -700,8 +731,11 @@ Input Parameters:
 static void *trcalloc(size_t nelem, size_t elsize, int lineno, const char fname[])
 {
     void *p;
-
+#ifdef MPL_HAVE_MEMKIND
+    p = trmalloc(nelem * elsize, lineno, fname, MEMKIND_SLOW);
+#else
     p = trmalloc(nelem * elsize, lineno, fname);
+#endif
     if (p) {
         memset(p, 0, nelem * elsize);
     }
@@ -761,9 +795,11 @@ static void *trrealloc(void *p, size_t size, int lineno, const char fname[])
         trfree(p, lineno, fname);
         return NULL;
     }
-
+#ifdef MPL_HAVE_MEMKIND
+    p = trmalloc(size, lineno, fname, MEMKIND_SLOW);
+#else
     pnew = trmalloc(size, lineno, fname);
-
+#endif
     if (p && pnew) {
         nsize = size;
         if (head->size < nsize)
@@ -808,7 +844,11 @@ static void *trstrdup(const char *str, int lineno, const char fname[])
     void *p;
     size_t len = strlen(str) + 1;
 
-    p = trmalloc(len, lineno, fname);
+ #ifdef MPL_HAVE_MEMKIND
+    p = trmalloc(len, lineno, fname, MEMKIND_SLOW);
+#else
+   p = trmalloc(len, lineno, fname);
+#endif
     if (p) {
         memcpy(p, str, len);
     }

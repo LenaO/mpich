@@ -32,11 +32,26 @@ int MPI_Op_create(MPI_User_function *user_fn, int commute, MPI_Op *op) __attribu
 /* Preallocated op objects */
 MPIR_Op MPIR_Op_builtin[MPIR_OP_N_BUILTIN] = { {0} };
 MPIR_Op MPIR_Op_direct[MPIR_OP_PREALLOC] = { {0} };
-MPIR_Object_alloc_t MPIR_Op_mem = { 0, 0, 0, 0, MPIR_OP,
+#ifdef HAVE_MEMKIND
+MPIR_Object_alloc_t MPIR_Op_mem = { 0, 0, 0, 0,0, 0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+                        MPIR_OP,
 					    sizeof(MPIR_Op),
 					    MPIR_Op_direct,
 					    MPIR_OP_PREALLOC, };
 
+#else
+MPIR_Object_alloc_t MPIR_Op_mem = { 0, 0, 0, 0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+                        MPIR_OP,
+					    sizeof(MPIR_Op),
+					    MPIR_Op_direct,
+					    MPIR_OP_PREALLOC, };
+#endif
 #ifdef HAVE_CXX_BINDING
 void MPII_Op_set_cxx( MPI_Op op, void (*opcall)(void) )
 {

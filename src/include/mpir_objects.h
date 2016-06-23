@@ -8,7 +8,9 @@
 #define MPIR_OBJECTS_H_INCLUDED
 
 #include "mpichconf.h"
-
+#ifdef HAVE_MEMKIND
+#include <memkind.h>
+#endif
 /*TDSOverview.tex
 
   MPI has a number of data structures, most of which are represented by
@@ -132,6 +134,7 @@
   The 'MPIR_PROCGROUP' kind is used to manage process groups (different
   from MPI Groups) that are used to keep track of collections of
   processes (each 'MPIR_PROCGROUP' corresponds to a group of processes
+<<<<<<< HEAD
   that define an 'MPI_COMM_WORLD'.  This becomes important only
   when MPI-2 dynamic process features are supported.  'MPIR_VCONN' is
   a virtual connection; while this is not part of the overall ADI3
@@ -177,19 +180,37 @@ const char *MPIR_Handle_get_kind_str(int kind);
 #define HANDLE_GET_KIND(a) (((unsigned)(a)&HANDLE_KIND_MASK)>>HANDLE_KIND_SHIFT)
 #define HANDLE_SET_KIND(a,kind) ((a)|((kind)<<HANDLE_KIND_SHIFT))
 
-/* For indirect, the remainder of the handle has a block and index within that
- * block */
+#ifdef HAVE_MEMKIND
+/*if we have memkind, wee need one bit to code, if the object is located in a differnt memory area
+*/
+#define HANDLE_INDIRECT_FAST 0x0
+#define HANDLE_INDIRECT_SLOW 0x1
+#define HANDLE_MEMKIND_SHIFT 25
 #define HANDLE_INDIRECT_SHIFT 12
-#define HANDLE_BLOCK(a) (((a)& 0x03FFF000) >> HANDLE_INDIRECT_SHIFT)
+#define HANDLE_MEMKIND(a) (((a)&0x02000000)>> HANDLE_MEMKIND_SHIFT)
+#define HANDLE_BLOCK(a) (((a)& 0x01FFF000) >> HANDLE_INDIRECT_SHIFT)
 #define HANDLE_BLOCK_INDEX(a) ((a) & 0x00000FFF)
-
-/* Number of blocks is between 1 and 16384 */
 #if defined MPID_HANDLE_NUM_BLOCKS
 #define HANDLE_NUM_BLOCKS MPID_HANDLE_NUM_BLOCKS
 #else
 #define HANDLE_NUM_BLOCKS 8192
 #endif /* MPID_HANDLE_NUM_BLOCKS */
+#define HANDLE_NUM_FAST_BLOCKS  1
+#define HANDLE_NUM_SLOW_BLOCKS HANDLE_NUM_BLOCKS >> 1
 
+#else
+ /* For indirect, the remainder of the handle has a block and index within that
+* block */
+#define HANDLE_INDIRECT_SHIFT 12
+#define HANDLE_BLOCK(a) (((a)& 0x03FFF000) >> HANDLE_INDIRECT_SHIFT)
+#define HANDLE_BLOCK_INDEX(a) ((a) & 0x00000FFF)
+#if defined MPID_HANDLE_NUM_BLOCKS
+#define HANDLE_NUM_BLOCKS MPID_HANDLE_NUM_BLOCKS
+#else
+#define HANDLE_NUM_BLOCKS 4096
+#endif /* MPID_HANDLE_NUM_BLOCKS */
+
+#endif
 /* Number of objects in a block is bewtween 1 and 4096 (each obj has an index
  * within its block) */
 #if defined MPID_HANDLE_NUM_INDICES
@@ -399,6 +420,15 @@ typedef struct MPIR_Object_alloc_t {
     int                initialized;     /* */
     void              *(*indirect)[];   /* Pointer to indirect object blocks */
     int                indirect_size;   /* Number of allocated indirect blocks */
+#ifdef HAVE_MEMKIND
+    void               *(*slow_indirect)[];
+    int                 slow_size;
+#endif
+#ifdef MPICH_HAVE_OBJCOUNT
+     unsigned int        allocated;
+     unsigned int        max_allocated;
+     unsigned int        local_max;
+#endif
     MPII_Object_kind   kind;            /* Kind of object this is for */
     int                size;            /* Size of an individual object */
     void               *direct;         /* Pointer to direct block, used 
@@ -407,9 +437,6 @@ typedef struct MPIR_Object_alloc_t {
 } MPIR_Object_alloc_t;
 static inline void *MPIR_Handle_obj_alloc(MPIR_Object_alloc_t *);
 static inline void *MPIR_Handle_obj_alloc_unsafe(MPIR_Object_alloc_t *);
-static inline void  MPIR_Handle_obj_free( MPIR_Object_alloc_t *, void * );
-static inline void *MPIR_Handle_get_ptr_indirect( int, MPIR_Object_alloc_t * );
-
 
 /* Convert Handles to objects for MPI types that have predefined objects */
 /* TODO examine generated assembly for this construct, it's probably suboptimal

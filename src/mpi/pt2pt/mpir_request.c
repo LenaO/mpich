@@ -10,10 +10,24 @@
 /* style:PMPIuse:PMPI_Status_f2c:2 sig:0 */
 
 MPIR_Request MPIR_Request_direct[MPIR_REQUEST_PREALLOC] = {{0}};
+#ifdef HAVE_MEMKIND
 MPIR_Object_alloc_t MPIR_Request_mem = {
-    0, 0, 0, 0, MPIR_REQUEST, sizeof(MPIR_Request), MPIR_Request_direct,
+    0,0, 0, 0, 0, 0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+    MPIR_REQUEST, sizeof(MPIR_Request), MPIR_Request_direct,
     MPIR_REQUEST_PREALLOC };
 
+#else
+MPIR_Object_alloc_t MPIR_Request_mem = {
+    0, 0, 0, 0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+    MPIR_REQUEST, sizeof(MPIR_Request), MPIR_Request_direct,
+    MPIR_REQUEST_PREALLOC };
+#endif
 #undef FUNCNAME
 #define FUNCNAME MPIR_Progress_wait_request
 #undef FCNAME
@@ -24,6 +38,22 @@ MPIR_Object_alloc_t MPIR_Request_mem = {
   A helper routine that implements the very common case of running the progress
   engine until the given request is complete.
   @*/
+/*my hack*/
+#ifdef MPICH_HAVE_OBJCOUNT
+int MPI_Get_Max_requests(){
+   return MPIR_Handle_max_obj(&MPIR_Request_mem);
+
+}
+void MPI_Reset_Max_requests() {
+ MPIR_Handle_reset_max_obj(&MPIR_Request_mem);
+return;
+}
+
+#else
+int MPI_Get_Max_requests(){return 0;}
+void MPI_Reset_Max_requests() {return;}
+#endif
+
 int MPIR_Progress_wait_request(MPIR_Request *req)
 {
     int mpi_errno = MPI_SUCCESS;

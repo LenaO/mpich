@@ -2290,5 +2290,9 @@ int PMPIX_Mutex_free(MPIX_Mutex *hdl) MPICH_API_PUBLIC;
 int PMPIX_Mutex_lock(MPIX_Mutex hdl, int mutex, int proc) MPICH_API_PUBLIC;
 int PMPIX_Mutex_unlock(MPIX_Mutex hdl, int mutex, int proc) MPICH_API_PUBLIC;
 #endif /* MPI_BUILD_PROFILING */
+/*hack for some functions */
+int MPI_Get_Max_requests();
+void MPI_Reset_Max_requests();
+
 
 #endif

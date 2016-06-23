@@ -18,10 +18,24 @@
 /* Preallocated datatype objects */
 MPIR_Datatype MPIR_Datatype_builtin[MPIR_DATATYPE_N_BUILTIN + 1] = { {0} };
 MPIR_Datatype MPIR_Datatype_direct[MPIR_DATATYPE_PREALLOC] = { {0} };
-MPIR_Object_alloc_t MPIR_Datatype_mem = { 0, 0, 0, 0, MPIR_DATATYPE,
+#ifdef HAVE_MEMKIND
+MPIR_Object_alloc_t MPIR_Datatype_mem = { 0, 0, 0, 0,0,0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+                MPIR_DATATYPE,
 			      sizeof(MPIR_Datatype), MPIR_Datatype_direct,
 					  MPIR_DATATYPE_PREALLOC};
 
+#else
+MPIR_Object_alloc_t MPIR_Datatype_mem = { 0, 0, 0, 0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+                    MPIR_DATATYPE,
+			          sizeof(MPIR_Datatype), MPIR_Datatype_direct,
+					  MPIR_DATATYPE_PREALLOC};
+#endif
 static int MPIR_Datatype_finalize(void *dummy );
 static int datatype_attr_finalize_cb(void *dummy );
 

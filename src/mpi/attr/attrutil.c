@@ -28,22 +28,52 @@
 
 /* Preallocated keyval objects */
 MPII_Keyval MPII_Keyval_direct[MPID_KEYVAL_PREALLOC] = { {0} };
-MPIR_Object_alloc_t MPII_Keyval_mem = { 0, 0, 0, 0, MPIR_KEYVAL,
+#ifdef HAVE_MEMKIND
+MPIR_Object_alloc_t MPII_Keyval_mem = { 0, 0, 0, 0, 0, 0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+                        MPIR_KEYVAL,
 					    sizeof(MPII_Keyval),
 					    MPII_Keyval_direct,
 					    MPID_KEYVAL_PREALLOC, };
 
+#else
+MPIR_Object_alloc_t MPII_Keyval_mem = { 0, 0, 0, 0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+                        MPIR_KEYVAL,
+					    sizeof(MPII_Keyval),
+					    MPII_Keyval_direct,
+					    MPID_KEYVAL_PREALLOC, };
+#endif
 #ifndef MPIR_ATTR_PREALLOC
 #define MPIR_ATTR_PREALLOC 32
 #endif
 
 /* Preallocated keyval objects */
 MPIR_Attribute MPID_Attr_direct[MPIR_ATTR_PREALLOC] = { {0} };
-MPIR_Object_alloc_t MPID_Attr_mem = { 0, 0, 0, 0, MPIR_ATTR,
+#ifdef HAVE_MEMKIND
+MPIR_Object_alloc_t MPID_Attr_mem = { 0, 0, 0, 0,0,0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+                        MPIR_ATTR,
 					    sizeof(MPIR_Attribute),
 					    MPID_Attr_direct,
 					    MPIR_ATTR_PREALLOC, };
 
+#else
+MPIR_Object_alloc_t MPID_Attr_mem = { 0, 0, 0, 0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+                        MPIR_ATTR,
+					    sizeof(MPIR_Attribute),
+					    MPID_Attr_direct,
+					    MPIR_ATTR_PREALLOC, };
+#endif
 /* Provides a way to trap all attribute allocations when debugging leaks. */
 MPIR_Attribute *MPID_Attr_alloc(void)
 {

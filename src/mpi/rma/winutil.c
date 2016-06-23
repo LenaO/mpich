@@ -14,6 +14,21 @@
 
 /* Preallocated window objects */
 MPIR_Win MPIR_Win_direct[MPIR_WIN_PREALLOC] = { {0} };
-MPIR_Object_alloc_t MPIR_Win_mem = { 0, 0, 0, 0, MPIR_WIN,
+#ifdef HAVE_MEMKIND
+MPIR_Object_alloc_t MPIR_Win_mem = { 0, 0, 0, 0, 0, 0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+                     MPIR_WIN,
 				      sizeof(MPIR_Win), MPIR_Win_direct,
                                       MPIR_WIN_PREALLOC};
+
+#else
+MPIR_Object_alloc_t MPIR_Win_mem = { 0, 0, 0, 0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+                      MPIR_WIN,
+				      sizeof(MPIR_Win), MPIR_Win_direct,
+                                      MPIR_WIN_PREALLOC};
+#endif

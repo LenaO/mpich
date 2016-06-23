@@ -14,7 +14,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include "mpi.h"
-
+#include "mpir_mem.h"
+#
 /* At least one early implementation of MPIT failed to set the
    enumtype and thus dirty data was returned.  This should not be needed,
    but is provided in case an implementation returns too many
@@ -233,7 +234,7 @@ int PrintCategories( FILE *fp )
         }
         /* Output information about the categories */
         if (numCvars > 0) {
-            int *cvarIndex = (int *)malloc( numCvars * sizeof(int) );
+            int *cvarIndex = (int *)MPL_malloc( numCvars * sizeof(int) );
             MPI_T_category_get_cvars( i, numCvars, cvarIndex );
             fprintf( fp, "\tControl Variables:\n" );
             for (j=0; j<numCvars; j++) {
@@ -250,10 +251,10 @@ int PrintCategories( FILE *fp )
                          mpit_validDtypeStr( datatype ),
                          mpit_verbosityToStr( verbose ) );
             }
-            free( cvarIndex );
+            MPL_free( cvarIndex );
         }
         if (numPvars > 0) {
-            int *pvarIndex = (int *)malloc( numPvars * sizeof(int) );
+            int *pvarIndex = (int *)MPL_malloc( numPvars * sizeof(int) );
             MPI_T_category_get_pvars( i, numPvars, pvarIndex );
             fprintf( fp, "\tPerformance Variables:\n" );
             for (j=0; j<numPvars; j++) {
@@ -272,10 +273,10 @@ int PrintCategories( FILE *fp )
                          mpit_validDtypeStr( datatype ),
                          mpit_verbosityToStr( verbose ) );
             }
-            free( pvarIndex );
+            MPL_free( pvarIndex );
         }
         if (numSubcat > 0) {
-            int *subcatIndex = (int *) malloc(numSubcat * sizeof(int));
+            int *subcatIndex = (int *) MPL_malloc(numSubcat * sizeof(int));
             MPI_T_category_get_categories(i, numSubcat, subcatIndex);
             fprintf( fp, "\tSubcategories:\n" );
             for (j=0; j<numSubcat; j++) {
@@ -287,7 +288,7 @@ int PrintCategories( FILE *fp )
                                         &ncvars, &npvars, &nsubcats);
                 fprintf(fp, "\t%s\n", catname);
             }
-            free( subcatIndex );
+            MPL_free( subcatIndex );
         }
     }
 

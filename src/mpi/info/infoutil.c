@@ -17,10 +17,24 @@
 /* Preallocated info objects */
 MPIR_Info MPIR_Info_builtin[MPIR_INFO_N_BUILTIN] = { { 0 } };
 MPIR_Info MPIR_Info_direct[MPIR_INFO_PREALLOC] = { { 0 } };
-MPIR_Object_alloc_t MPIR_Info_mem = { 0, 0, 0, 0, MPIR_INFO,
+#ifdef HAVE_MEMKIND
+MPIR_Object_alloc_t MPIR_Info_mem = { 0, 0, 0, 0, 0, 0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+                      MPIR_INFO,
 				      sizeof(MPIR_Info), MPIR_Info_direct,
                                       MPIR_INFO_PREALLOC, };
-
+#
+#else
+MPIR_Object_alloc_t MPIR_Info_mem = { 0, 0, 0, 0,
+#ifdef MPICH_HAVE_OBJCOUNT
+                        0,0,0,
+#endif
+                      MPIR_INFO,
+				      sizeof(MPIR_Info), MPIR_Info_direct,
+                                      MPIR_INFO_PREALLOC, };
+#endif
 /* Free an info structure.  In the multithreaded case, this routine
    relies on the SINGLE_CS in the info routines (particularly MPI_Info_free) */
 #undef FUNCNAME

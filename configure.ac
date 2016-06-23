@@ -359,6 +359,10 @@ AC_ARG_ENABLE(timing,
         runtime - Runtime control of data collected
 ],,enable_timing=default)
 
+AC_ARG_ENABLE(objcount,
+[--enable-objcount - enalble count of allocated objects]
+,[enable_objcount="yes"],)
+
 AC_ARG_ENABLE(g,
 [  --enable-g=option - Control the level of debugging support in the
                        MPICH implementation.  "option" is a list of comma
@@ -578,6 +582,10 @@ AC_ARG_ENABLE([long-double],
                                the compiler supports it.])],
               [],
               [enable_long_double=yes])
+
+AC_ARG_WITH([memkind],
+	[AC_HELP_STRING([--with-memkind=path], [Use the memkind library])],
+	[if test -z "$withval" ; then with_mekind=$withval ; fi],[with_memkind="no"])
 
 AC_ARG_WITH(cross,
 	AC_HELP_STRING([--with-cross=file],
@@ -1510,6 +1518,11 @@ fi
 if test -n "$perform_dbgmutex" ; then 
    AC_DEFINE(MPICH_DEBUG_MUTEX,1,[Define to enable mutex debugging])
 fi
+
+if test -n "$enable_objcount"; then
+    AC_DEFINE(MPICH_HAVE_OBJCOUNT,1,[Define to use objcount])
+fi
+
 
 pac_cross_compiling=no
 if test "$with_cross" != "no" ; then
@@ -5424,6 +5437,10 @@ if test "X$enable_shared" = "Xyes" ; then
         fi
         ]
     )
+fi
+
+if test "${with_memkind}" != "no" ; then
+        AC_DEFINE(HAVE_MEMKIND,1,[Define if memkind is used])
 fi
 
 # Set F08 versions of datatypes, which have type MPI_Datatype and are not integers anymore.

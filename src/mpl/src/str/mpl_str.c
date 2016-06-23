@@ -171,10 +171,10 @@ Input Parameters:
   Module:
   Utility
   @*/
-#if !defined MPL_HAVE_STRDUP
+#if !defined MPL_HAVE_STRDUP ||  defined MPL_HAVE_MEMKIND
 char *MPL_strdup(mpl_const char *str)
 {
-    char *mpl_restrict p = (char *) malloc(strlen(str) + 1);
+    char *mpl_restrict p = (char *)MPL_malloc(strlen(str) + 1);
     mpl_const char *mpl_restrict in_p = str;
     char *save_p;
 
