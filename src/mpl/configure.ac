@@ -60,9 +60,7 @@ if test "${with_memkind}" != "no" ; then
     if test "${with_memkind}" != "yes" ; then
         MEMKIND_INCLUDE="-I${with_memkind}/include"
         CPPFLAGS="$CPPFLAGS $MEMKIND_INCLUDE"
-#        LIBS="${with_memkind}/lib/libmemkind.a $LIBS"
-#         LIBS="${with_memkind}/lib/libjemalloc.a $LIBS"
-        PAC_APPEND_FLAG([-L${with_memkind}/lib  -lmemkind -ljemalloc -lnuma -lscif],[LDFLAGS])
+        PAC_APPEND_FLAG([-L${with_memkind}/lib  -lmemkind  -lnuma],[LDFLAGS])
     fi
 
     AC_CHECK_HEADER([memkind.h], , [AC_MSG_ERROR(['memkind.h not found in ${with_memkind}/include.
@@ -72,7 +70,7 @@ Did you specify the correct path with --with-memkind=?'])])
     AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <memkind.h>],
                                    [memkind_malloc(MEMKIND_DEFAULT, 1024);])], [echo "yes"], 
                                    [echo "no" ; AC_MSG_ERROR(['MPL: Cannot link with memkind:  Cannot
-find ${with_memkind}/lib/libmemkind.a or ${withmemkind}/lib/libjemalloc.a'])])
+find ${with_memkind}/lib/libmemkind.so'])])
         AC_DEFINE(HAVE_MEMKIND,1,[Define if memkind is used])
 
 fi

@@ -29,7 +29,6 @@
 #endif
 #ifdef MPL_HAVE_MEMKIND
 #include <memkind.h>
-#include <memkind_special.h>
 #endif
 /* HEADER_DOUBLES is the number of doubles in a trSPACE header */
 /* We have to be careful about alignment rules here */
@@ -240,7 +239,7 @@ Input Parameters:
     available.
  +*/
 #ifdef MPL_HAVE_MEMKIND
-static void *trmalloc(size_t a, int lineno, const char fname[], memkind_t memkind)
+static void *trmalloc(size_t a, memkind_t memkind, int lineno, const char fname[])
 #else
 static void *trmalloc(size_t a, int lineno, const char fname[])
 #endif
@@ -269,7 +268,6 @@ static void *trmalloc(size_t a, int lineno, const char fname[])
         goto fn_exit;
     }
 #ifdef MPL_HAVE_MEMKIND
-
     new = (char *)memkind_malloc(memkind, nsize + sizeof(TrSPACE) + sizeof(unsigned long));
 #else
     new = (char *)malloc(nsize + sizeof(TrSPACE) + sizeof(unsigned long));
@@ -345,13 +343,17 @@ static void *trmalloc(size_t a, int lineno, const char fname[])
     return (void *) new;
 }
 
+#ifdef MPL_HAVE_MEMKIND
+void *MPL_trmalloc(size_t a, memkind_t memkind, int lineno, const char fname[])
+#else
 void *MPL_trmalloc(size_t a, int lineno, const char fname[])
+#endif
 {
     void *retval;
 
     TR_THREAD_CS_ENTER;
 #ifdef MPL_HAVE_MEMKIND
-    retval = trmalloc(a, lineno, fname, MEMKIND_SLOW);
+    retval = trmalloc(a,memkind, lineno, fname);
 #else
     retval = trmalloc(a, lineno, fname);
 #endif
@@ -728,11 +730,18 @@ Input Parameters:
     Double aligned pointer to requested storage, or null if not
     available.
  +*/
+
+
+
+#ifdef MPL_HAVE_MEMKIND
+static void *trcalloc(size_t nelem, size_t elsize, memkind_t memkind, int lineno, const char fname[])
+#else
 static void *trcalloc(size_t nelem, size_t elsize, int lineno, const char fname[])
+#endif
 {
     void *p;
 #ifdef MPL_HAVE_MEMKIND
-    p = trmalloc(nelem * elsize, lineno, fname, MEMKIND_SLOW);
+    p = trmalloc(nelem * elsize, memkind, lineno, fname);
 #else
     p = trmalloc(nelem * elsize, lineno, fname);
 #endif
@@ -742,11 +751,21 @@ static void *trcalloc(size_t nelem, size_t elsize, int lineno, const char fname[
     return p;
 }
 
+
+#ifdef MPL_HAVE_MEMKIND
+void *MPL_trcalloc(size_t nelem, size_t elsize, memkind_t memkind, int lineno, const char fname[])
+#else
 void *MPL_trcalloc(size_t nelem, size_t elsize, int lineno, const char fname[])
+#endif
 {
     void *retval;
     TR_THREAD_CS_ENTER;
+
+#ifdef MPL_HAVE_MEMKIND
+    retval = trcalloc(nelem, elsize, memkind, lineno, fname);
+#else
     retval = trcalloc(nelem, elsize, lineno, fname);
+#endif
     TR_THREAD_CS_EXIT;
     return retval;
 }
@@ -765,7 +784,12 @@ Input Parameters:
     available.  This implementation ALWAYS allocates new space and copies
     the contents into the new space.
  +*/
+
+#ifdef MPL_HAVE_MEMKIND
+static void *trrealloc(void *p, size_t size, memkind_t memkind,  int lineno, const char fname[])
+#else
 static void *trrealloc(void *p, size_t size, int lineno, const char fname[])
+#endif
 {
     void *pnew;
     size_t nsize;
@@ -796,7 +820,7 @@ static void *trrealloc(void *p, size_t size, int lineno, const char fname[])
         return NULL;
     }
 #ifdef MPL_HAVE_MEMKIND
-    p = trmalloc(size, lineno, fname, MEMKIND_SLOW);
+    pnew = trmalloc(size,memkind , lineno, fname);
 #else
     pnew = trmalloc(size, lineno, fname);
 #endif
@@ -819,11 +843,22 @@ static void *trrealloc(void *p, size_t size, int lineno, const char fname[])
     return pnew;
 }
 
+
+
+#ifdef MPL_HAVE_MEMKIND
+void *MPL_trrealloc(void *p, size_t size, memkind_t memkind, int lineno, const char fname[])
+#else
 void *MPL_trrealloc(void *p, size_t size, int lineno, const char fname[])
+#endif
 {
     void *retval;
     TR_THREAD_CS_ENTER;
+
+#ifdef MPL_HAVE_MEMKIND
+    retval = trrealloc(p, size, memkind, lineno, fname);
+#else
     retval = trrealloc(p, size, lineno, fname);
+#endif
     TR_THREAD_CS_EXIT;
     return retval;
 }
@@ -839,13 +874,14 @@ Input Parameters:
     Returns:
     Pointer to copy of the input string.
  +*/
+
 static void *trstrdup(const char *str, int lineno, const char fname[])
 {
     void *p;
     size_t len = strlen(str) + 1;
 
- #ifdef MPL_HAVE_MEMKIND
-    p = trmalloc(len, lineno, fname, MEMKIND_SLOW);
+#ifdef MPL_HAVE_MEMKIND
+    p = trmalloc(len, MEMKIND_HBW, lineno, fname);
 #else
    p = trmalloc(len, lineno, fname);
 #endif
@@ -854,6 +890,7 @@ static void *trstrdup(const char *str, int lineno, const char fname[])
     }
     return p;
 }
+
 
 void *MPL_trstrdup(const char *str, int lineno, const char fname[])
 {

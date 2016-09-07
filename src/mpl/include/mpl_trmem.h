@@ -53,8 +53,13 @@ char *MPL_strdup(const char *str);
   Module:
   Utility
   M*/
-#define MPL_malloc(a)    MPL_trmalloc((a),__LINE__,__FILE__)
 
+#ifdef MPL_HAVE_MEMKIND
+#define MPL_malloc(a)    MPL_trmalloc((a),MEMKIND_HBW, __LINE__,__FILE__)
+#define MPL_malloc_slow(a)    MPL_trmalloc((a),MEMKIND_DEFAULT, __LINE__,__FILE__)
+#else
+#define MPL_malloc(a)    MPL_trmalloc((a),__LINE__,__FILE__)
+#endif
 /*M
   MPL_calloc - Allocate memory that is initialized to zero.
 
@@ -74,8 +79,12 @@ char *MPL_strdup(const char *str);
   Module:
   Utility
   M*/
-#define MPL_calloc(a,b)    MPL_trcalloc((a),(b),__LINE__,__FILE__)
-
+#ifdef MPL_HAVE_MEMKIND
+#define MPL_calloc(a,b)    MPL_trcalloc((a),(b), MEMKIND_HBW, __LINE__,__FILE__)
+#define MPL_calloc_slow(a,b)    MPL_trcalloc((a),(b),MEMKIND_DEFAULT, __LINE__,__FILE__)
+#else
+#define MPL_calloc(a,b)    MPL_trcalloc((a),(b), __LINE__,__FILE__)
+#endif
 /*M
   MPL_free - Free memory
 
@@ -103,21 +112,34 @@ char *MPL_strdup(const char *str);
   Module:
   Utility
   M*/
+
+
+#ifdef MPL_HAVE_MEMKIND
+#define MPL_free(a)      MPL_trfree(a,__LINE__,__FILE__)
+
+#define MPL_realloc(a,b)    MPL_trrealloc((a),(b),MEMKIND_HBW, __LINE__,__FILE__)
+
+#define MPL_free_slow(a)      MPL_trfree(a,__LINE__,__FILE__)
+
+#define MPL_realloc_slow(a,b)    MPL_trrealloc((a),(b),MEMKIND_DEFAULT, __LINE__,__FILE__)
+
+#else
 #define MPL_free(a)      MPL_trfree(a,__LINE__,__FILE__)
 
 #define MPL_realloc(a,b)    MPL_trrealloc((a),(b),__LINE__,__FILE__)
+#endif 
 
 #else /* MPL_USE_MEMORY_TRACING */
 
 /* No memory tracing; just use native functions */
 #ifdef MPL_HAVE_MEMKIND
-#define MPL_malloc(a)    memkind_malloc(MEMKIND_DEFAULT, (size_t)(a))
-#define MPL_calloc(a,b)  memkind_calloc(MEMKIND_DEFAULT, (size_t)(a),(size_t)(b))
-#define MPL_free(a)      memkind_free(MEMKIND_DEFAULT, (void *)(a))
-#define MPL_realloc(a,b) memkind_realloc(MEMKIND_DEFAULT,  (void *)(a),(size_t)(b))
-#define MPL_malloc_slow(a)    memkind_malloc(MEMKIND_SLOW, (size_t)(a))
-#define MPL_calloc_slow(a,b)  memkind_calloc(MEMKIND_SLOW, (size_t)(a),(size_t)(b))
-#define MPL_free_slow(a)      memkind_free(MEMKIND_SLOW, (void *)(a))
+#define MPL_malloc(a)    memkind_malloc(MEMKIND_HBW, (size_t)(a))
+#define MPL_calloc(a,b)  memkind_calloc(MEMKIND_HBW, (size_t)(a),(size_t)(b))
+#define MPL_free(a)      memkind_free(MEMKIND_HBW, (void *)(a))
+#define MPL_realloc(a,b) memkind_realloc(MEMKIND_HBW,  (void *)(a),(size_t)(b))
+#define MPL_malloc_slow(a)    memkind_malloc(MEMKIND_DEFAULT, (size_t)(a))
+#define MPL_calloc_slow(a,b)  memkind_calloc(MEMKIND_DEFAULT, (size_t)(a),(size_t)(b))
+#define MPL_free_slow(a)      memkind_free(MEMKIND_DEFAULT, (void *)(a))
 
 
 #else
@@ -200,12 +222,20 @@ typedef union {
    does not alias any pointer prior to the call.
  */
 void MPL_trinit(int, int);
+#ifdef MPL_HAVE_MEMKIND
+void *MPL_trmalloc(size_t, memkind_t, int, const char[]);
+void *MPL_trcalloc(size_t, size_t, memkind_t, int, const char[]);
+void *MPL_trrealloc(void *, size_t, memkind_t, int, const char[]);
+#else
 void *MPL_trmalloc(size_t, int, const char[]);
+void *MPL_trcalloc(size_t, size_t, int, const char[]);
+void *MPL_trrealloc(void *, size_t, int, const char[]);
+#endif
+
 void MPL_trfree(void *, int, const char[]);
 int MPL_trvalid(const char[]);
 int MPL_trvalid2(const char[],int,const char[]);
-void *MPL_trcalloc(size_t, size_t, int, const char[]);
-void *MPL_trrealloc(void *, size_t, int, const char[]);
+
 void *MPL_trstrdup(const char *, int, const char[]);
 
 /* Make sure that FILE is defined */

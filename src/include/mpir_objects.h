@@ -134,7 +134,6 @@
   The 'MPIR_PROCGROUP' kind is used to manage process groups (different
   from MPI Groups) that are used to keep track of collections of
   processes (each 'MPIR_PROCGROUP' corresponds to a group of processes
-<<<<<<< HEAD
   that define an 'MPI_COMM_WORLD'.  This becomes important only
   when MPI-2 dynamic process features are supported.  'MPIR_VCONN' is
   a virtual connection; while this is not part of the overall ADI3
@@ -193,11 +192,10 @@ const char *MPIR_Handle_get_kind_str(int kind);
 #if defined MPID_HANDLE_NUM_BLOCKS
 #define HANDLE_NUM_BLOCKS MPID_HANDLE_NUM_BLOCKS
 #else
-#define HANDLE_NUM_BLOCKS 8192
+#define HANDLE_NUM_BLOCKS 4096
 #endif /* MPID_HANDLE_NUM_BLOCKS */
-#define HANDLE_NUM_FAST_BLOCKS  1
-#define HANDLE_NUM_SLOW_BLOCKS HANDLE_NUM_BLOCKS >> 1
-
+#define HANDLE_NUM_FAST_BLOCKS  4096
+#define HANDLE_NUM_SLOW_BLOCKS 0
 #else
  /* For indirect, the remainder of the handle has a block and index within that
 * block */
@@ -437,7 +435,8 @@ typedef struct MPIR_Object_alloc_t {
 } MPIR_Object_alloc_t;
 static inline void *MPIR_Handle_obj_alloc(MPIR_Object_alloc_t *);
 static inline void *MPIR_Handle_obj_alloc_unsafe(MPIR_Object_alloc_t *);
-
+static inline void  MPIR_Handle_obj_free( MPIR_Object_alloc_t *, void * );
+static inline void *MPIR_Handle_get_ptr_indirect( int, MPIR_Object_alloc_t * );
 /* Convert Handles to objects for MPI types that have predefined objects */
 /* TODO examine generated assembly for this construct, it's probably suboptimal
  * on Blue Gene.  An if/else if/else might help the compiler out.  It also lets
