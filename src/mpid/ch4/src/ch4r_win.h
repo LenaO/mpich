@@ -20,6 +20,10 @@
 #include <sys/mman.h>
 #endif /* HAVE_SYS_MMAN_H */
 
+#ifdef HAVE_MEMKIND
+#include <numa.h>
+#endif
+
 #undef FUNCNAME
 #define FUNCNAME MPIDI_CH4R_mpi_win_set_info
 #undef FCNAME
