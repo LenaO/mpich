@@ -5441,6 +5441,11 @@ fi
 
 if test "${with_memkind}" != "no" ; then
         AC_DEFINE(HAVE_MEMKIND,1,[Define if memkind is used])
+        MEMKIND_INCLUDE="-I${with_memkind}/include"
+        MEMKIND_LIB="-L${with_memkind}/lib"
+        PAC_APPEND_FLAG(${[MEMKKIND_LIB}],[WRAPPER_LDFLAGS])
+        PAC_APPEND_FLAG([${MEMKIND_INCLUDE}],[WRAPPER_CFLAGS])
+        PAC_APPEND_FLAG([-lmemkind],[WRAPPER_LIBS])
 fi
 
 # Set F08 versions of datatypes, which have type MPI_Datatype and are not integers anymore.

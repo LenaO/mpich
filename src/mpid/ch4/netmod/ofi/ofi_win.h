@@ -13,6 +13,12 @@
 
 #include "ofi_impl.h"
 #include <opa_primitives.h>
+#ifdef HAVE_MEMKIND
+#include <numa.h>
+#include <numaif.h>
+#include <memkind.h>
+#endif
+
 
 
 #undef FUNCNAME
@@ -977,6 +983,18 @@ static inline int MPIDI_NM_mpi_win_allocate_shared(MPI_Aint size,
 
         MPIR_ERR_SETANDSTMT(mpi_errno, MPI_ERR_NO_MEM, goto fn_fail, "**nomem");
     }
+#ifdef HAVE_MEMKIND
+    unsigned long nodemask;
+    if (MPIDI_CH4U_WIN(win, info_args).win_memtype == MPIDI_CH4I_MCDRAM)
+         memkind_hbw_all_get_mbind_nodemask(NULL,
+                                       &nodemask,
+                                       NUMA_NUM_NODES);
+    if (MPIDI_CH4U_WIN(win, info_args).win_memtype == MPIDI_CH4I_DDR)
+         memkind_default_get_mbind_nodemask(NULL,
+                                       &nodemask,
+                                       NUMA_NUM_NODES);
+#endif
+
 
     if (comm_ptr->rank == 0) {
         map_ptr = MPIDI_CH4R_generate_random_addr(mapsize);
@@ -990,6 +1008,11 @@ static inline int MPIDI_NM_mpi_win_allocate_shared(MPI_Aint size,
 
             MPIR_ERR_SETANDSTMT(mpi_errno, MPI_ERR_NO_MEM, goto fn_fail, "**nomem");
         }
+#ifdef HAVE_MEMKIND
+
+    if (MPIDI_CH4U_WIN(win, info_args).win_memtype != MPIDI_CH4I_MEMDEFAULT)
+        mbind(map_ptr, mapsize, MPOL_BIND, &nodemask, NUMA_NUM_NODES, 0);
+#endif
 
         mpi_errno = MPIR_Bcast_impl(&map_ptr, 1, MPI_UNSIGNED_LONG, 0, comm_ptr, &errflag);
 
@@ -1021,6 +1044,11 @@ static inline int MPIDI_NM_mpi_win_allocate_shared(MPI_Aint size,
                 shm_unlink(shm_key);
 
             MPIR_ERR_SETANDSTMT(mpi_errno, MPI_ERR_NO_MEM, goto fn_fail, "**nomem");
+#ifdef HAVE_MEMKIND
+        if (MPIDI_CH4U_WIN(win, info_args).win_memtype != MPIDI_CH4I_MEMDEFAULT)
+            mbind(map_ptr, mapsize, MPOL_BIND, &nodemask, NUMA_NUM_NODES, 0);
+#endif
+
         }
     }
 
@@ -1147,9 +1175,25 @@ static inline int MPIDI_NM_mpi_win_allocate(MPI_Aint size,
 
     if (mpi_errno != MPI_SUCCESS)
         goto fn_fail;
+#ifdef HAVE_MEMKIND
+    unsigned long nodemask;
+    if (MPIDI_CH4U_WIN(win, info_args).win_memtype == MPIDI_CH4I_MCDRAM)
+         memkind_hbw_all_get_mbind_nodemask(NULL,
+                                       &nodemask,
+                                       NUMA_NUM_NODES);
+    if (MPIDI_CH4U_WIN(win, info_args).win_memtype == MPIDI_CH4I_DDR)
+         memkind_default_get_mbind_nodemask(NULL,
+                                       &nodemask,
+                                       NUMA_NUM_NODES);
+#endif
 
     mpi_errno = MPIDI_CH4R_get_symmetric_heap(size, comm, &baseP, *win_ptr);
+#ifdef HAVE_MEMKIND
 
+    if (MPIDI_CH4U_WIN(win, info_args).win_memtype != MPIDI_CH4I_MEMDEFAULT)
+        mbind(&baseP, size, MPOL_BIND, &nodemask, NUMA_NUM_NODES, 0);
+#endif
+ 
     if (mpi_errno != MPI_SUCCESS)
         goto fn_fail;
 

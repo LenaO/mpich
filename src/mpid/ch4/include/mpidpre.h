@@ -214,8 +214,9 @@ typedef enum {
 
 #ifdef HAVE_MEMKIND
 typedef enum {
-    MPIDI_CH4I_MCDRAM,
-    MPIDI_CH4I_DRAM,
+    MPIDI_CH4I_MEMDEFAULT = 0,
+    MPIDI_CH4I_MCDRAM = 1,
+    MPIDI_CH4I_DDR = 2,
 /*GPU, NVRAM, etc*/
 
 } MPIDI_CH4U_win_memtype;
@@ -227,7 +228,7 @@ typedef struct MPIDI_CH4U_win_info_args_t {
     int accumulate_ordering;
     int alloc_shared_noncontig;
 #ifdef HAVE_MEMKIND
-    int MPIDI_CH4U_win_memtype;
+    int win_memtype;
 #endif
     MPIDI_CH4U_win_info_accumulate_ops accumulate_ops;
 } MPIDI_CH4U_win_info_args_t;

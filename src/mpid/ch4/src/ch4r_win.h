@@ -22,6 +22,8 @@
 
 #ifdef HAVE_MEMKIND
 #include <numa.h>
+#include <numaif.h>
+#include <memkind.h>
 #endif
 
 #undef FUNCNAME
@@ -85,8 +87,19 @@ static inline int MPIDI_CH4R_mpi_win_set_info(MPIR_Win * win, MPIR_Info * info)
             if (!strcmp(curr_ptr->value, "same_op"))
                 MPIDI_CH4U_WIN(win, info_args).accumulate_ops = MPIDI_CH4I_ACCU_SAME_OP;
         }
-
-        curr_ptr = curr_ptr->next;
+#ifdef HAVE_MEMKIND
+        else if (!strcmp(curr_ptr->key, "memory_type")) {
+            printf("have %s\n",  curr_ptr->value);
+            if (!strcmp(curr_ptr->value, "mcdram"))
+                MPIDI_CH4U_WIN(win, info_args).win_memtype = MPIDI_CH4I_MCDRAM;
+            else if (!strcmp(curr_ptr->value, "ddr"))
+                MPIDI_CH4U_WIN(win, info_args).win_memtype = MPIDI_CH4I_DDR;
+            else
+                MPIDI_CH4U_WIN(win, info_args).win_memtype = MPIDI_CH4I_MEMDEFAULT;
+           printf("now %d\n",  MPIDI_CH4U_WIN(win, info_args).win_memtype);
+        }
+#endif
+    curr_ptr = curr_ptr->next;
     }
 
     mpi_errno = MPIR_Barrier_impl(win->comm_ptr, &errflag);
@@ -144,7 +157,6 @@ static inline int MPIDI_CH4R_win_init(MPI_Aint length,
     win->copyDispUnit = 0;
     win->copySize = 0;
     MPIDI_CH4U_WIN(win, shared_table) = NULL;
-
     /* Initialize the info (hint) flags per window */
     MPIDI_CH4U_WIN(win, info_args).no_locks = 0;
     MPIDI_CH4U_WIN(win, info_args).accumulate_ordering = (MPIDI_CH4I_ACCU_ORDER_RAR |
@@ -154,6 +166,9 @@ static inline int MPIDI_CH4R_win_init(MPI_Aint length,
     MPIDI_CH4U_WIN(win, info_args).accumulate_ops = MPIDI_CH4I_ACCU_SAME_OP_NO_OP;
     MPIDI_CH4U_WIN(win, info_args).same_size = 0;
     MPIDI_CH4U_WIN(win, info_args).alloc_shared_noncontig = 0;
+#ifdef HAVE_MEMKIND
+    MPIDI_CH4U_WIN(win, info_args).win_memtype = MPIDI_CH4I_MEMDEFAULT;
+#endif
 
     if ((info != NULL) && ((int *) info != (int *) MPI_INFO_NULL)) {
         mpi_errno = MPIDI_CH4R_mpi_win_set_info(win, info);
@@ -562,6 +577,14 @@ static inline int MPIDI_CH4R_mpi_win_get_info(MPIR_Win * win, MPIR_Info ** info_
     else
         mpi_errno = MPIR_Info_set_impl(*info_p_p, "accumulate_ops", "same_op_no_op");
 
+#ifdef HAVE_MEMKIND
+    if (MPIDI_CH4U_WIN(win, info_args).win_memtype == MPIDI_CH4I_MCDRAM)
+        mpi_errno = MPIR_Info_set_impl(*info_p_p, "memory_type", "mcdram");
+    else if (MPIDI_CH4U_WIN(win, info_args).win_memtype == MPIDI_CH4I_DDR)
+        mpi_errno = MPIR_Info_set_impl(*info_p_p, "memory_type", "ddr");
+    else
+        mpi_errno = MPIR_Info_set_impl(*info_p_p, "memory_type", "default");
+#endif
     MPIR_Assert(mpi_errno == MPI_SUCCESS);
 
     if (win->create_flavor == MPI_WIN_FLAVOR_SHARED) {
@@ -857,11 +880,26 @@ static inline int MPIDI_CH4R_mpi_win_allocate_shared(MPI_Aint size,
 
         MPIR_ERR_SETANDSTMT(mpi_errno, MPI_ERR_NO_MEM, goto fn_fail, "**nomem");
     }
+#ifdef HAVE_MEMKIND
+    unsigned long nodemask;
+    if (MPIDI_CH4U_WIN(win, info_args).win_memtype == MPIDI_CH4I_MCDRAM)
+         memkind_hbw_all_get_mbind_nodemask(NULL,
+                                       &nodemask,
+                                       NUMA_NUM_NODES);
+    if (MPIDI_CH4U_WIN(win, info_args).win_memtype == MPIDI_CH4I_DDR)
+         memkind_default_get_mbind_nodemask(NULL,
+                                       &nodemask,
+                                       NUMA_NUM_NODES);
+#endif
 
     if (comm_ptr->rank == 0) {
         map_ptr = MPIDI_CH4R_generate_random_addr(mapsize);
         map_ptr = mmap(map_ptr, mapsize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+#ifdef HAVE_MEMKIND
 
+    if (MPIDI_CH4U_WIN(win, info_args).win_memtype != MPIDI_CH4I_MEMDEFAULT)
+        mbind(map_ptr, mapsize, MPOL_BIND, &nodemask, NUMA_NUM_NODES, 0);
+#endif
         if (map_ptr == NULL || map_ptr == MAP_FAILED) {
             close(fd);
 
@@ -891,6 +929,11 @@ static inline int MPIDI_CH4R_mpi_win_allocate_shared(MPI_Aint size,
          */
         MPIR_Assert(rc == 1);
         map_ptr = mmap(map_ptr, mapsize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+#ifdef HAVE_MEMKIND
+        if (MPIDI_CH4U_WIN(win, info_args).win_memtype != MPIDI_CH4I_MEMDEFAULT)
+            mbind(map_ptr, mapsize, MPOL_BIND, &nodemask, NUMA_NUM_NODES, 0);
+#endif
+
         MPIDI_CH4U_WIN(win, mmap_addr) = map_ptr;
         MPIDI_CH4U_WIN(win, mmap_sz) = mapsize;
 
