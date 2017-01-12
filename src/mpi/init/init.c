@@ -172,10 +172,6 @@ int MPI_Init( int *argc, char ***argv )
 
 /*I do a small hack here to avoid the longer malloc time for the first memkind_slow malloc in
  * benchmars , only temporarly*/
-#ifdef HAVE_MEMKIND
-    void* tmp = MPL_malloc_slow(1024);
-    MPL_free_slow(tmp);
-#endif
     /* If the user requested for asynchronous progress, request for
      * THREAD_MULTIPLE. */
     if (MPIR_CVAR_ASYNC_PROGRESS)

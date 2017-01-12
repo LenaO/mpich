@@ -419,8 +419,8 @@ typedef struct MPIR_Object_alloc_t {
     void              *(*indirect)[];   /* Pointer to indirect object blocks */
     int                indirect_size;   /* Number of allocated indirect blocks */
 #ifdef HAVE_MEMKIND
-    void               *(*slow_indirect)[];
-    int                 slow_size;
+    void               *(*fast_indirect)[];
+    int                 fast_size;
 #endif
 #ifdef MPICH_HAVE_OBJCOUNT
      unsigned int        allocated;

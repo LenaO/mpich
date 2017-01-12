@@ -55,8 +55,8 @@ char *MPL_strdup(const char *str);
   M*/
 
 #ifdef MPL_HAVE_MEMKIND
-#define MPL_malloc(a)    MPL_trmalloc((a),MEMKIND_HBW, __LINE__,__FILE__)
-#define MPL_malloc_slow(a)    MPL_trmalloc((a),MEMKIND_DEFAULT, __LINE__,__FILE__)
+#define MPL_malloc(a)    MPL_trmalloc((a),MEMKIND_DEFALULT, __LINE__,__FILE__)
+#define MPL_malloc_fast(a)    MPL_trmalloc((a),MEMKIND_HBW, __LINE__,__FILE__)
 #else
 #define MPL_malloc(a)    MPL_trmalloc((a),__LINE__,__FILE__)
 #endif
@@ -80,8 +80,8 @@ char *MPL_strdup(const char *str);
   Utility
   M*/
 #ifdef MPL_HAVE_MEMKIND
-#define MPL_calloc(a,b)    MPL_trcalloc((a),(b), MEMKIND_HBW, __LINE__,__FILE__)
-#define MPL_calloc_slow(a,b)    MPL_trcalloc((a),(b),MEMKIND_DEFAULT, __LINE__,__FILE__)
+#define MPL_calloc(a,b)    MPL_trcalloc((a),(b), MEMKIND_DEFAULT, __LINE__,__FILE__)
+#define MPL_calloc_fast(a,b)    MPL_trcalloc((a),(b),MEMKIND_HBW, __LINE__,__FILE__)
 #else
 #define MPL_calloc(a,b)    MPL_trcalloc((a),(b), __LINE__,__FILE__)
 #endif
@@ -117,11 +117,11 @@ char *MPL_strdup(const char *str);
 #ifdef MPL_HAVE_MEMKIND
 #define MPL_free(a)      MPL_trfree(a,__LINE__,__FILE__)
 
-#define MPL_realloc(a,b)    MPL_trrealloc((a),(b),MEMKIND_HBW, __LINE__,__FILE__)
+#define MPL_realloc(a,b)    MPL_trrealloc((a),(b),MEMKIND_DEFAULT, __LINE__,__FILE__)
 
-#define MPL_free_slow(a)      MPL_trfree(a,__LINE__,__FILE__)
+#define MPL_free(a)      MPL_trfree(a,__LINE__,__FILE__)
 
-#define MPL_realloc_slow(a,b)    MPL_trrealloc((a),(b),MEMKIND_DEFAULT, __LINE__,__FILE__)
+#define MPL_realloc_fast(a,b)    MPL_trrealloc((a),(b),MEMKIND_HBW, __LINE__,__FILE__)
 
 #else
 #define MPL_free(a)      MPL_trfree(a,__LINE__,__FILE__)
@@ -133,13 +133,13 @@ char *MPL_strdup(const char *str);
 
 /* No memory tracing; just use native functions */
 #ifdef MPL_HAVE_MEMKIND
-#define MPL_malloc(a)    memkind_malloc(MEMKIND_HBW, (size_t)(a))
-#define MPL_calloc(a,b)  memkind_calloc(MEMKIND_HBW, (size_t)(a),(size_t)(b))
-#define MPL_free(a)      memkind_free(MEMKIND_HBW, (void *)(a))
-#define MPL_realloc(a,b) memkind_realloc(MEMKIND_HBW,  (void *)(a),(size_t)(b))
-#define MPL_malloc_slow(a)    memkind_malloc(MEMKIND_DEFAULT, (size_t)(a))
-#define MPL_calloc_slow(a,b)  memkind_calloc(MEMKIND_DEFAULT, (size_t)(a),(size_t)(b))
-#define MPL_free_slow(a)      memkind_free(MEMKIND_DEFAULT, (void *)(a))
+#define MPL_malloc(a)    memkind_malloc(MEMKIND_DEFAULT, (size_t)(a))
+#define MPL_calloc(a,b)  memkind_calloc(MEMKIND_DEFAULT, (size_t)(a),(size_t)(b))
+#define MPL_free(a)      memkind_free(MEMKIND_DEFAULT, (void *)(a))
+#define MPL_realloc(a,b) memkind_realloc(MEMKIND_DEFAULT,  (void *)(a),(size_t)(b))
+#define MPL_malloc_fast(a)    memkind_malloc(MEMKIND_HBW, (size_t)(a))
+#define MPL_calloc_fast(a,b)  memkind_calloc(MEMKIND_HBW, (size_t)(a),(size_t)(b))
+#define MPL_free_fast(a)      memkind_free(MEMKIND_HBW, (void *)(a))
 
 
 #else

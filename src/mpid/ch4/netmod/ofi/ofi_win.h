@@ -1000,6 +1000,7 @@ static inline int MPIDI_NM_mpi_win_allocate_shared(MPI_Aint size,
         map_ptr = MPIDI_CH4R_generate_random_addr(mapsize);
         map_ptr = mmap(map_ptr, mapsize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
 
+
         if (map_ptr == NULL || map_ptr == MAP_FAILED) {
             close(fd);
 
@@ -1012,6 +1013,9 @@ static inline int MPIDI_NM_mpi_win_allocate_shared(MPI_Aint size,
 
     if (MPIDI_CH4U_WIN(win, info_args).win_memtype != MPIDI_CH4I_MEMDEFAULT)
         mbind(map_ptr, mapsize, MPOL_BIND, &nodemask, NUMA_NUM_NODES, 0);
+
+        madvise(map_ptr, mapsize, MADV_HUGEPAGE);
+
 #endif
 
         mpi_errno = MPIR_Bcast_impl(&map_ptr, 1, MPI_UNSIGNED_LONG, 0, comm_ptr, &errflag);
@@ -1177,21 +1181,21 @@ static inline int MPIDI_NM_mpi_win_allocate(MPI_Aint size,
         goto fn_fail;
 #ifdef HAVE_MEMKIND
     unsigned long nodemask;
-    if (MPIDI_CH4U_WIN(win, info_args).win_memtype == MPIDI_CH4I_MCDRAM)
+    if (MPIDI_CH4U_WIN(*win_ptr, info_args).win_memtype == MPIDI_CH4I_MCDRAM)
          memkind_hbw_all_get_mbind_nodemask(NULL,
                                        &nodemask,
                                        NUMA_NUM_NODES);
-    if (MPIDI_CH4U_WIN(win, info_args).win_memtype == MPIDI_CH4I_DDR)
+    if (MPIDI_CH4U_WIN(*win_ptr, info_args).win_memtype == MPIDI_CH4I_DDR)
          memkind_default_get_mbind_nodemask(NULL,
                                        &nodemask,
                                        NUMA_NUM_NODES);
 #endif
-
     mpi_errno = MPIDI_CH4R_get_symmetric_heap(size, comm, &baseP, *win_ptr);
 #ifdef HAVE_MEMKIND
-
-    if (MPIDI_CH4U_WIN(win, info_args).win_memtype != MPIDI_CH4I_MEMDEFAULT)
-        mbind(&baseP, size, MPOL_BIND, &nodemask, NUMA_NUM_NODES, 0);
+  //  printf("have memkind with %d\n", (MPIDI_CH4U_WIN(*win_ptr, info_args).win_memtype));
+    if (MPIDI_CH4U_WIN(*win_ptr, info_args).win_memtype != MPIDI_CH4I_MEMDEFAULT){
+        mbind(baseP, size, MPOL_BIND, &nodemask, NUMA_NUM_NODES, 0);
+    }
 #endif
  
     if (mpi_errno != MPI_SUCCESS)

@@ -120,8 +120,8 @@ static inline void *MPIR_Handle_direct_init(void *direct,
 }
 
 #ifdef HAVE_MEMKIND
-static inline void *MPIR_Handle_indirect_slow_init(void *(**slow_indirect)[],
-                                              int *slow_size,
+static inline void *MPIR_Handle_indirect_fast_init(void *(**fast_indirect)[],
+                                              int *fast_size,
                                               int indirect_num_blocks,
                                               int indirect_num_indices,
                                               int obj_size, int handle_type)
@@ -132,17 +132,17 @@ static inline void *MPIR_Handle_indirect_slow_init(void *(**slow_indirect)[],
     int i;
     /* Must create new storage for dynamically allocated objects */
     /* Create the table */
-    if (!*slow_indirect) {
+    if (!*fast_indirect) {
         /* printf("Creating indirect table with %d pointers to blocks in it\n", indirect_num_blocks); */
-        *slow_indirect = (void *) MPL_calloc_slow(indirect_num_blocks, sizeof(void *));
-        if (!*slow_indirect) {
+        *fast_indirect = (void *) MPL_calloc_fast(indirect_num_blocks, sizeof(void *));
+        if (!*fast_indirect) {
             return 0;
         }
-        *slow_size = 0;
+        *fast_size = 0;
     }
 
     /* See if we can allocate another block */
-    if (*slow_size >= indirect_num_blocks) {
+    if (*fast_size >= indirect_num_blocks) {
         /* printf("Out of space in indirect table\n"); */
         return 0;
     }
@@ -160,7 +160,7 @@ static inline void *MPIR_Handle_indirect_slow_init(void *(**slow_indirect)[],
         ptr = ptr + obj_size;
         hptr->next = ptr;
         hptr->handle = ((unsigned) HANDLE_KIND_INDIRECT << HANDLE_KIND_SHIFT) |(unsigned)HANDLE_INDIRECT_SLOW << HANDLE_MEMKIND_SHIFT| 
-            (handle_type << HANDLE_MPI_KIND_SHIFT) | (*slow_size << HANDLE_INDIRECT_SHIFT) | i;
+            (handle_type << HANDLE_MPI_KIND_SHIFT) | (*fast_size << HANDLE_INDIRECT_SHIFT) | i;
         /* printf("handle=%#x handle_type=%x *indirect_size=%d i=%d\n", hptr->handle, handle_type, *indirect_size, i); */
        // printf("ptr handle %lx \n", hptr->handle);
         HANDLE_VG_LABEL(hptr, obj_size, handle_type, 0);
@@ -169,8 +169,8 @@ static inline void *MPIR_Handle_indirect_slow_init(void *(**slow_indirect)[],
     /* We're here because avail is null, so there is no need to set
      * the last block ptr to avail */
     /* printf("loc of update is %x\n", &(**indirect)[*indirect_size]);  */
-    (**slow_indirect)[*slow_size] = block_ptr;
-    *slow_size = *slow_size + 1;
+    (**fast_indirect)[*fast_size] = block_ptr;
+    *fast_size = *fast_size + 1;
     return block_ptr;
 }
 #endif
@@ -344,8 +344,8 @@ static inline void *MPIR_Handle_obj_alloc_unsafe(MPIR_Object_alloc_t * objmem)
 
             }
             else{
-                ptr = MPIR_Handle_indirect_slow_init(&objmem->slow_indirect,
-                        &objmem->slow_size,
+                ptr = MPIR_Handle_indirect_fast_init(&objmem->fast_indirect,
+                        &objmem->fast_size,
                         HANDLE_NUM_SLOW_BLOCKS,
                         HANDLE_NUM_INDICES, objsize, objkind);
             }
@@ -527,7 +527,7 @@ static inline void *MPIR_Handle_get_ptr_indirect(int handle, MPIR_Object_alloc_t
     {
         char *block_ptr;
         /* Get the pointer to the block */
-        block_ptr = (char *) (*(objmem->slow_indirect))[block_num];
+        block_ptr = (char *) (*(objmem->fast_indirect))[block_num];
         /* Get the item */
         block_ptr += index_num * objmem->size;
         return block_ptr;

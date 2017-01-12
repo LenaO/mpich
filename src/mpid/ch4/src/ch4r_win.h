@@ -89,14 +89,14 @@ static inline int MPIDI_CH4R_mpi_win_set_info(MPIR_Win * win, MPIR_Info * info)
         }
 #ifdef HAVE_MEMKIND
         else if (!strcmp(curr_ptr->key, "memory_type")) {
-            printf("have %s\n",  curr_ptr->value);
+
             if (!strcmp(curr_ptr->value, "mcdram"))
                 MPIDI_CH4U_WIN(win, info_args).win_memtype = MPIDI_CH4I_MCDRAM;
             else if (!strcmp(curr_ptr->value, "ddr"))
                 MPIDI_CH4U_WIN(win, info_args).win_memtype = MPIDI_CH4I_DDR;
             else
                 MPIDI_CH4U_WIN(win, info_args).win_memtype = MPIDI_CH4I_MEMDEFAULT;
-           printf("now %d\n",  MPIDI_CH4U_WIN(win, info_args).win_memtype);
+
         }
 #endif
     curr_ptr = curr_ptr->next;
@@ -174,7 +174,6 @@ static inline int MPIDI_CH4R_win_init(MPI_Aint length,
         mpi_errno = MPIDI_CH4R_mpi_win_set_info(win, info);
         MPIR_Assert(mpi_errno == 0);
     }
-
 
     MPIDI_CH4U_WIN(win, mmap_sz) = 0;
     MPIDI_CH4U_WIN(win, mmap_addr) = NULL;
