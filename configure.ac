@@ -809,6 +809,7 @@ export PMPILIBNAME
 export RANLIB
 export OPALIBNAME
 export MPLLIBNAME
+export PMILIBNAME
 # ----------------------------------------------------------------------------
 # with-device
 if test "$with_device" = "default" ; then
@@ -1683,6 +1684,38 @@ AC_SUBST(pm_name)
 # Once we've selected the process manager (or managers), we can
 # check that we have a compatible PMI implemenatation.
 # with-pmi
+
+# First, we check if we have an external PMI
+AC_ARG_VAR([PMILIBNAME],[can be used to override the name of the PMI library (default: "pmi")])
+PMILIBNAME=${PMILIBNAME:-"pmi"}
+
+
+AC_ARG_WITH([pmi-prefix],
+            [AS_HELP_STRING([[--pmi-mpl-prefix[=DIR]]],
+                            [use the PMI(x) library installed in DIR,
+                             rather than the one included in src/pmi.  Pass
+                             "embedded" to force usage of the pmi source
+                             distributed with MPICH.])],
+            [],dnl action-if-given
+            [with_pmi_prefix=embedded]) dnl action-if-not-given
+
+AC_SUBST([mpllib])
+if  test "$with_pmi_prefix" != "embedded" ; then 
+    # The user specified an already-installed MPL; just sanity check, don't
+    # subconfigure it
+
+    AC_SUBST([pmilibdir])
+    pmilibdir=""
+
+    AS_IF([test -s "${with_pmi_prefix}/include/pmi.h"],
+          [:],[AC_MSG_ERROR([the PMI installation in "${with_mpl_prefix}" requires include/pmi.h])])
+    PAC_APPEND_FLAG([-I${with_pmi_prefix}/include],[CPPFLAGS])
+    PAC_PREPEND_FLAG([-l${PMILIBNAME}],[WRAPPER_LIBS])
+    PAC_APPEND_FLAG([-L${with_pmi_prefix}/lib],[WRAPPER_LDFLAGS])
+    PAC_APPEND_FLAG([-L${with_pmi_prefix}/lib],[LDFLAGS])
+    pmilib="-L${with_mpl_prefix}/lib"
+else
+
 if test "$with_pmi" != "no" ; then
     if test "$with_pmi" = "default" -o "$with_pmi" = "yes" ; then
         if test -n "$PM_REQUIRES_PMI" ; then
@@ -1710,7 +1743,7 @@ if test "$with_pmi" != "no" ; then
         subsystems="$subsystems src/pmi/$pmi_name"
     fi
 fi
-
+fi
 # Step 3: complete pm setup.
 # Note that checks for errors have already been performed, so this
 # loop does not need to perform any extra error checks.
