@@ -453,7 +453,12 @@ static inline int MPIDI_OFI_do_am_isend(int rank,
         MPIDU_Segment_init(buf, count, datatype, segment_ptr, 0);
         segment_first = 0;
         last = data_sz;
+
+#if defined(HAVE_MEMKIND) && defined(MPICH_MCDRAM_PACK)
+        MPIDI_OFI_AMREQUEST_HDR(sreq, pack_buffer) = (char *) MPL_malloc_fast(data_sz);
+#else
         MPIDI_OFI_AMREQUEST_HDR(sreq, pack_buffer) = (char *) MPL_malloc(data_sz);
+#endif
         MPIR_ERR_CHKANDJUMP1(MPIDI_OFI_AMREQUEST_HDR(sreq, pack_buffer) == NULL, mpi_errno,
                              MPI_ERR_OTHER, "**nomem", "**nomem %s", "Send Pack buffer alloc");
         MPIDU_Segment_pack(segment_ptr, segment_first, &last,

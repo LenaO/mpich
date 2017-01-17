@@ -60,8 +60,13 @@ MPL_STATIC_INLINE_PREFIX int MPIDI_OFI_do_irecv(void *buf,
     recv_buf = (char *) buf + dt_true_lb;
 
     if (!dt_contig) {
+#if defined(HAVE_MEMKIND) && defined(MPICH_MCDRAM_PACK)
+         MPIDI_OFI_REQUEST(rreq, noncontig) =
+            (MPIDI_OFI_noncontig_t *) MPL_malloc_fast(data_sz + sizeof(MPID_Segment));
+#else 
         MPIDI_OFI_REQUEST(rreq, noncontig) =
             (MPIDI_OFI_noncontig_t *) MPL_malloc(data_sz + sizeof(MPID_Segment));
+#endif
         MPIR_ERR_CHKANDJUMP1(MPIDI_OFI_REQUEST(rreq, noncontig->pack_buffer) == NULL, mpi_errno,
                              MPI_ERR_OTHER, "**nomem", "**nomem %s", "Recv Pack Buffer alloc");
         recv_buf = MPIDI_OFI_REQUEST(rreq, noncontig->pack_buffer);

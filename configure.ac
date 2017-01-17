@@ -363,6 +363,12 @@ AC_ARG_ENABLE(objcount,
 [--enable-objcount - enalble count of allocated objects]
 ,[enable_objcount="yes"],)
 
+AC_ARG_ENABLE(mcdram-pack,
+[--enable-mcdram-pack - enalble packing and unpacking in mcdram memory (knl)]
+,[enable_mcdram_packe="yes"],)
+
+
+
 AC_ARG_ENABLE(g,
 [  --enable-g=option - Control the level of debugging support in the
                        MPICH implementation.  "option" is a list of comma
@@ -1522,6 +1528,11 @@ fi
 if test -n "$enable_objcount"; then
     AC_DEFINE(MPICH_HAVE_OBJCOUNT,1,[Define to use objcount])
 fi
+
+if test -n "$enable_mcdram_pack"; then
+    AC_DEFINE(MPICH_MCDRAM_PACK,1,[Define to use pack/unpack with mcdram])
+fi
+
 
 
 pac_cross_compiling=no

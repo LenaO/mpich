@@ -138,8 +138,13 @@ MPL_STATIC_INLINE_PREFIX int MPIDI_OFI_send_normal(MPIDI_OFI_SENDPARAMS,
         size_t segment_first;
         segment_first = 0;
         last = data_sz;
+#if defined(HAVE_MEMKIND) && defined(MPICH_MCDRAM_PACK)
+         MPIDI_OFI_REQUEST(sreq, noncontig) =
+            (MPIDI_OFI_noncontig_t *) MPL_malloc_fast(data_sz + sizeof(MPID_Segment));
+#else 
         MPIDI_OFI_REQUEST(sreq, noncontig) =
             (MPIDI_OFI_noncontig_t *) MPL_malloc(data_sz + sizeof(MPID_Segment));
+#endif
         MPIR_ERR_CHKANDJUMP1(MPIDI_OFI_REQUEST(sreq, noncontig) == NULL, mpi_errno, MPI_ERR_OTHER,
                              "**nomem", "**nomem %s", "Send Pack buffer alloc");
         MPID_Segment_init(buf, count, datatype, &MPIDI_OFI_REQUEST(sreq, noncontig->segment), 0);

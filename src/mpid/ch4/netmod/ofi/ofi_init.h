@@ -849,7 +849,30 @@ static inline void *MPIDI_NM_mpi_alloc_mem(size_t size, MPIR_Info * info_ptr)
 {
 
     void *ap;
+#ifdef HAVE_MEMKIND
+    MPIR_Info *curr_ptr;
+    char *value, *token, *savePtr;
+   int mem_type  = MPIDI_CH4I_MEMDEFAULT;
+   if(info_ptr) {
+        curr_ptr = info_ptr->next;
+        while (curr_ptr) {
+            if (!strcmp(curr_ptr->key, "memory_type")) {
+                if (!strcmp(curr_ptr->value, "mcdram"))
+                    mem_type = MPIDI_CH4I_MCDRAM;
+                else if (!strcmp(curr_ptr->value, "ddr"))
+                    mem_type = MPIDI_CH4I_DDR;
+                else
+                    mem_type = MPIDI_CH4I_MEMDEFAULT;
+            }
+        }
+    }
+    if (mem_type == MPIDI_CH4I_MCDRAM)
+        MPL_malloc_fast(size);
+    else
+        ap = MPL_malloc(size);
+#else
     ap = MPL_malloc(size);
+#endif
     return ap;
 }
 

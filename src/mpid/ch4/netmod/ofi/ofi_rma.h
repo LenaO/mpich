@@ -298,7 +298,12 @@ static inline void MPIDI_OFI_win_datatype_map(MPIDI_OFI_win_datatype_t * dt)
     else {
         unsigned map_size = dt->pointer->max_contig_blocks * dt->count + 1;
         dt->num_contig = map_size;
+
+#if defined(HAVE_MEMKIND) && defined(MPICH_MCDRAM_PACK)
+        dt->map = (DLOOP_VECTOR *) MPL_malloc_fast(map_size * sizeof(DLOOP_VECTOR));
+#else 
         dt->map = (DLOOP_VECTOR *) MPL_malloc(map_size * sizeof(DLOOP_VECTOR));
+#endif
         MPIR_Assert(dt->map != NULL);
 
         MPID_Segment seg;
